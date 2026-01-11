@@ -3,270 +3,401 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sklad App</title>
+    <title>Kanban Sklad</title>
+    <!-- Knihovny -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
     <style>
-        :root { --primary: #2563eb; --danger: #dc2626; --success: #16a34a; --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --green: #10B981; --yellow: #F59E0B; --red: #EF4444;
+            --bg: #F3F4F6; --card: #ffffff; --text: #1F2937;
+        }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
         
-        /* LOGIN */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
-        .login-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 320px; text-align: center; }
-        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem; }
-        .btn-login { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        /* HEADER */
+        header { background: white; padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        h1 { margin: 0; font-size: 1.2rem; color: #333; }
+        .header-actions { display: flex; gap: 10px; }
+        .btn-action { padding: 8px 12px; border: none; border-radius: 6px; font-weight: bold; color: white; cursor: pointer; font-size: 0.9rem; }
+        .btn-scan { background: #8B5CF6; }
+        .btn-print { background: #374151; }
 
-        /* APP */
-        #app-content { display: none; }
-        header { background: var(--card-bg); padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 10px; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; }
-        h1 { margin: 0; font-size: 1.2rem; color: var(--primary); }
-        .search-bar { display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 1rem; outline: none; }
-        .btn-icon { background: var(--primary); color: white; border: none; border-radius: 12px; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; }
+        /* KANBAN STAVY */
+        .status-bar { display: flex; gap: 5px; padding: 10px; background: white; margin-bottom: 10px; justify-content: space-around; font-size: 0.8rem; font-weight: bold; color: #555; }
+        .stat-box { text-align: center; }
+        .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
 
-        /* SKENER & GRID */
-        #scanner-container { width: 100%; max-width: 500px; margin: 0 auto; display: none; background: black; position: relative; }
-        #reader { width: 100%; }
-        .close-scanner { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.8); border: none; padding: 10px; border-radius: 50%; z-index: 10; font-weight: bold; }
-        .grid { display: grid; grid-template-columns: 1fr; gap: 15px; padding: 15px; max-width: 800px; margin: 0 auto; }
-        @media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+        /* ITEM CARD */
+        .grid { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 10px; }
+        @media(min-width:600px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+        .card { 
+            background: white; padding: 15px; border-radius: 12px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 8px solid gray;
+            transition: 0.3s;
+        }
         
-        .card { background: var(--card-bg); border-radius: 16px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; position: relative; border: 2px solid transparent; transition: transform 0.2s; }
-        .card.empty { border-color: var(--danger); background-color: #fef2f2; }
-        .empty-badge { position: absolute; top: -10px; background: var(--danger); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: none; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3); }
-        .card.empty .empty-badge { display: block; }
-        .item-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 5px; text-align: center; }
-        .item-code { font-family: monospace; color: #6b7280; font-size: 0.9rem; margin-bottom: 10px; }
-        .controls { display: flex; align-items: center; gap: 15px; width: 100%; justify-content: center; margin-top: 10px; }
-        .btn-circle { width: 48px; height: 48px; border-radius: 50%; border: none; font-size: 1.5rem; display: flex; justify-content: center; align-items: center; cursor: pointer; touch-action: manipulation; }
-        .btn-minus { background: #e5e7eb; color: var(--text); }
-        .btn-plus { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
-        .count-display { font-size: 1.5rem; font-weight: 800; min-width: 40px; text-align: center; }
-        .barcode-svg { width: 100%; max-width: 200px; height: 50px; }
-        .btn-del { background: none; border: none; color: #9ca3af; font-size: 0.8rem; margin-top: 10px; text-decoration: underline; cursor: pointer; }
+        /* Barvy levého pruhu podle stavu */
+        .card[data-status="green"] { border-left-color: var(--green); }
+        .card[data-status="yellow"] { border-left-color: var(--yellow); }
+        .card[data-status="red"] { border-left-color: var(--red); background: #FEF2F2; }
 
-        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--success); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); border: none; z-index: 90; cursor: pointer; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: flex-end; }
-        .modal { background: white; width: 100%; max-width: 600px; padding: 25px; border-radius: 20px 20px 0 0; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .modal input { width: 100%; margin-bottom: 15px; padding: 10px; font-size: 1.1rem; border: 1px solid #ddd; border-radius: 8px;}
-        .modal-btns { display: flex; gap: 10px; }
-        .btn-full { flex: 1; padding: 15px; border-radius: 12px; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; }
-        .btn-primary { background: var(--success); color: white; }
-        .btn-secondary { background: #e5e7eb; color: var(--text); }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .card-name { font-weight: bold; font-size: 1.1rem; }
+        .card-status-text { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; color: #555; }
+        
+        /* Tlačítka stavů */
+        .status-btns { display: flex; gap: 5px; margin-top: 10px; }
+        .s-btn { flex: 1; padding: 8px; border: 1px solid #ddd; background: white; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+        .s-btn.active { color: white; border-color: transparent; }
+        .s-btn.green.active { background: var(--green); }
+        .s-btn.yellow.active { background: var(--yellow); }
+        .s-btn.red.active { background: var(--red); }
 
+        /* TISK (Kanban karty) */
         @media print {
             body * { visibility: hidden; }
-            .grid, .grid * { visibility: visible; }
-            body { background: white; padding: 0; margin: 0; }
-            .grid { display: block; padding: 0; margin: 0; width: 100%; }
-            .card { float: left; width: 48mm; height: 28mm; margin: 2mm; padding: 1mm; border: 1px dashed #000; border-radius: 0; box-shadow: none; background: white !important; page-break-inside: avoid; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
-            .controls, .btn-del, .empty-badge, header, .fab, #scanner-container, #login-overlay { display: none !important; }
-            .item-name { font-size: 10pt; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-            .barcode-svg { height: 12mm; width: 90%; }
-            .item-code { font-size: 12pt; font-weight: bold; margin: 0; color: black; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+            
+            .kanban-card { 
+                border: 2px dashed black; padding: 15px; text-align: center; 
+                page-break-inside: avoid; height: 200px; display: flex; flex-direction: column; 
+                justify-content: center; align-items: center; 
+            }
+            .kc-title { font-size: 18pt; font-weight: bold; margin-bottom: 10px; }
+            .kc-desc { font-size: 12pt; margin-bottom: 10px; }
+            .kc-barcode { height: 50px; width: 80%; }
         }
+
+        /* MODALS */
+        #scanner-modal, #login-overlay, #print-setup { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); z-index: 1000; display: none; 
+            flex-direction: column; justify-content: center; align-items: center; 
+        }
+        #reader { width: 100%; max-width: 500px; background: black; }
+        .modal-box { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; }
+        .modal-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-full { width: 100%; padding: 12px; background: var(--green); color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .close-btn { margin-top: 20px; background: transparent; border: 1px solid white; color: white; padding: 10px; cursor: pointer; }
+
+        /* ADD BAR */
+        .add-bar { position: fixed; bottom: 0; width: 100%; background: white; padding: 15px; display: flex; gap: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .add-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+        .btn-add { background: var(--green); color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: bold; font-size: 1.5rem; }
+
     </style>
 </head>
 <body>
-    <div id="login-overlay">
-        <div class="login-box">
+
+    <!-- 1. LOGIN -->
+    <div id="login-overlay" style="display: flex;">
+        <div class="modal-box">
             <h2>🔐 Sklad Login</h2>
-            <input type="text" id="loginUser" placeholder="Uživatelské jméno">
-            <input type="password" id="loginPass" placeholder="Heslo">
-            <button class="btn-login" onclick="checkLogin()">Vstoupit</button>
-            <p id="loginError" style="color:red; display:none; margin-top:10px;">Špatné údaje!</p>
+            <input type="text" id="u" placeholder="Jméno">
+            <input type="password" id="p" placeholder="Heslo">
+            <button class="btn-full" style="background:var(--green)" onclick="login()">Vstoupit</button>
         </div>
     </div>
 
-    <div id="app-content">
+    <!-- 2. SKENER -->
+    <div id="scanner-modal">
+        <div id="reader"></div>
+        <button class="close-btn" onclick="stopScanner()">Zavřít kameru</button>
+    </div>
+
+    <!-- 3. OKNO PRO TISK -->
+    <div id="print-setup">
+        <div class="modal-box">
+            <h3>🖨️ Tisk Kanban karet</h3>
+            <p>Vyberte produkt pro tisk karty:</p>
+            <select id="print-select" style="width:100%; padding:10px; margin-bottom:10px;"></select>
+            
+            <p>Typ karty (kam ji vložíte):</p>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button class="btn-full" style="background:var(--yellow); color:black;" onclick="preparePrint('yellow')">⚠️ Karta "DOCHÁZÍ"</button>
+                <button class="btn-full" style="background:var(--red);" onclick="preparePrint('red')">🛑 Karta "KOUPIT"</button>
+            </div>
+            
+            <button class="btn-full" style="background:gray" onclick="document.getElementById('print-setup').style.display='none'">Zrušit</button>
+        </div>
+    </div>
+
+    <!-- SKRYTÁ OBLAST PRO TISK -->
+    <div id="print-area"></div>
+
+    <!-- 4. HLAVNÍ APP -->
+    <div id="app" style="display:none;">
         <header>
             <div class="header-top">
-                <h1>📦 Sklad <span id="syncStatus" style="font-size:0.8rem; color:#666; margin-left:10px;">...</span></h1>
-                <button class="btn-icon" onclick="window.print()" title="Tisk">🖨️</button>
+                <h1>📦 Kanban Sklad</h1>
+                <div class="header-actions">
+                    <button class="btn-action btn-print" onclick="openPrintModal()">🖨️ Karty</button>
+                    <button class="btn-action btn-scan" onclick="startScanner()">📷 Sken</button>
+                </div>
             </div>
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Hledat..." oninput="renderItems()">
-                <button class="btn-icon" onclick="startScanner()" title="Skenovat">📷</button>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="search" placeholder="🔍 Hledat..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:6px;" oninput="render()">
+                <button class="btn-action" style="background:#3B82F6;" onclick="sendEmail()" id="btnEmail">📧 Odeslat</button>
             </div>
         </header>
 
-        <div id="scanner-container">
-            <button class="close-scanner" onclick="stopScanner()">Zavřít kameru X</button>
-            <div id="reader"></div>
+        <div class="status-bar">
+            <div class="stat-box"><span class="dot" style="background:var(--green)"></span>Máme: <b id="c-green">0</b></div>
+            <div class="stat-box"><span class="dot" style="background:var(--yellow)"></span>Dochází: <b id="c-yellow">0</b></div>
+            <div class="stat-box"><span class="dot" style="background:var(--red)"></span>Koupit: <b id="c-red">0</b></div>
         </div>
 
-        <div id="inventoryList" class="grid"></div>
-        <button class="fab" onclick="openModal()">+</button>
+        <div id="grid" class="grid"></div>
 
-        <div class="modal-overlay" id="addModal">
-            <div class="modal">
-                <h2>Nový produkt</h2>
-                <label>Název:</label>
-                <input type="text" id="newName" placeholder="Např. Cukr krupice">
-                <label>Počet:</label>
-                <input type="number" id="newCount" value="1">
-                <div class="modal-btns">
-                    <button class="btn-full btn-secondary" onclick="closeModal()">Zrušit</button>
-                    <button class="btn-full btn-primary" onclick="addItem()">Uložit</button>
-                </div>
-            </div>
+        <div class="add-bar">
+            <input type="text" id="newName" class="add-input" placeholder="Nový produkt...">
+            <button class="btn-add" onclick="addItem()">+</button>
         </div>
     </div>
 
     <script>
-        // --- 1. KONFIGURACE A PROMĚNNÉ (MUSÍ BÝT PRVNÍ!) ---
+        // --- KONFIGURACE (VAŠE KLÍČE) ---
         const USER = "dole";
         const PASS = "01";
+        
+        // Data (Pantry)
         const PANTRY_ID = "7a5aa8af-6120-4aef-9372-9520d1fb3f2d";
-        const BASKET_NAME = "sklad";
-        const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
+        const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/kanban_v2`;
+
+        // EmailJS
+        const EMAIL_SERVICE_ID = "service_wzg8ove";
+        const EMAIL_TEMPLATE_ID = "template_71jc7wb";
+        const EMAIL_PUBLIC_KEY = "o1EMgg8G3ffAloJPI";
 
         let inventory = [];
         let html5QrCode;
 
-        // --- 2. PŘIHLAŠOVÁNÍ ---
-        function checkLogin() {
-            const u = document.getElementById('loginUser').value;
-            const p = document.getElementById('loginPass').value;
-            if(u === USER && p === PASS) {
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-                localStorage.setItem('sklad_logged_in', 'true');
-                loadData();
-            } else {
-                document.getElementById('loginError').style.display = 'block';
-            }
-        }
+        // --- INIT ---
+        (function(){
+            try { emailjs.init(EMAIL_PUBLIC_KEY); } catch(e){ console.error("EmailJS Init Error", e); }
+            if(localStorage.getItem('kanban_logged') === 'true') showApp();
+        })();
 
-        // Automatické přihlášení, pokud už je uloženo
-        if(localStorage.getItem('sklad_logged_in') === 'true') {
+        // --- AUTH ---
+        function login() {
+            if(document.getElementById('u').value === USER && document.getElementById('p').value === PASS) {
+                localStorage.setItem('kanban_logged', 'true');
+                showApp();
+            } else alert("Chyba!");
+        }
+        function showApp() {
             document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('app-content').style.display = 'block';
-            // Tady to teď už nespadne, protože API_URL je definované nahoře
+            document.getElementById('app').style.display = 'block';
             loadData();
         }
 
-        // --- 3. SKLADOVÁ LOGIKA ---
+        // --- DATA ---
         async function loadData() {
-            updateStatus("Načítám...");
             try {
                 const res = await fetch(API_URL + "?t=" + Date.now());
                 if(res.ok) {
                     const data = await res.json();
                     inventory = data.items || [];
-                } else { inventory = []; }
-                renderItems();
-                updateStatus("Online ✅");
-            } catch(e) {
-                updateStatus("Offline ❌");
-                console.error(e);
-            }
+                } else inventory = [];
+                render();
+            } catch(e) { console.error(e); }
         }
 
         async function saveData() {
-            updateStatus("Ukládám...");
             try {
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ items: inventory })
                 });
-                updateStatus("Uloženo ✅");
-            } catch(e) { updateStatus("Chyba ❌"); }
+            } catch(e) {}
         }
 
-        function updateStatus(msg) { document.getElementById('syncStatus').innerText = msg; }
+        // --- RENDER ---
+        function render() {
+            const grid = document.getElementById('grid');
+            const term = document.getElementById('search').value.toLowerCase();
+            grid.innerHTML = '';
+            
+            let counts = { green:0, yellow:0, red:0 };
 
-        function renderItems() {
-            const list = document.getElementById('inventoryList');
-            const term = document.getElementById('searchInput').value.toLowerCase().trim();
-            list.innerHTML = '';
-
-            const filtered = inventory.filter(i => 
-                i.name.toLowerCase().includes(term) || i.id === term
-            );
-
-            filtered.sort((a,b) => (a.count === 0) === (b.count === 0) ? 0 : a.count === 0 ? -1 : 1);
-
-            filtered.forEach(item => {
-                const isEmpty = item.count === 0;
-                const div = document.createElement('div');
-                div.className = `card ${isEmpty ? 'empty' : ''}`;
-                div.innerHTML = `
-                    <div class="empty-badge">DOKOUPIT!</div>
-                    <div class="item-name">${item.name}</div>
-                    <svg class="barcode-svg" id="bc-${item.id}"></svg>
-                    <div class="item-code">#${item.id}</div>
-                    <div class="controls">
-                        <button class="btn-circle btn-minus" onclick="updateCount('${item.id}', -1)">-</button>
-                        <span class="count-display">${item.count}</span>
-                        <button class="btn-circle btn-plus" onclick="updateCount('${item.id}', 1)">+</button>
-                    </div>
-                    <button class="btn-del" onclick="deleteItem('${item.id}')">smazat položku</button>
-                `;
-                list.appendChild(div);
-                JsBarcode(`#bc-${item.id}`, item.id, { format: "CODE128", displayValue: false, margin: 0, height: 50 });
+            // Sort: Red first
+            const sorted = [...inventory].sort((a,b) => {
+                const map = { red:0, yellow:1, green:2 };
+                return map[a.status] - map[b.status];
             });
+
+            sorted.forEach(item => {
+                if(!item.name.toLowerCase().includes(term)) return;
+                counts[item.status]++;
+
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.setAttribute('data-status', item.status);
+                
+                let statusText = item.status === 'green' ? '✅ OK' : (item.status === 'yellow' ? '⚠️ Dochází' : '🛑 KOUPIT');
+
+                div.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <div class="card-name">${item.name}</div>
+                            <div class="card-status-text">${statusText}</div>
+                        </div>
+                        <button onclick="delItem('${item.id}')" style="border:none; background:none; color:#999;">✖</button>
+                    </div>
+                    
+                    <div class="status-btns">
+                        <button class="s-btn green ${item.status==='green'?'active':''}" onclick="setStatus('${item.id}', 'green')">Máme</button>
+                        <button class="s-btn yellow ${item.status==='yellow'?'active':''}" onclick="setStatus('${item.id}', 'yellow')">Dochází</button>
+                        <button class="s-btn red ${item.status==='red'?'active':''}" onclick="setStatus('${item.id}', 'red')">Koupit</button>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+
+            document.getElementById('c-green').innerText = counts.green;
+            document.getElementById('c-yellow').innerText = counts.yellow;
+            document.getElementById('c-red').innerText = counts.red;
         }
 
-        function generateCode() {
-            let id;
-            do { id = Math.floor(Math.random()*1000).toString().padStart(3,'0'); } while(inventory.some(i => i.id === id));
-            return id;
+        // --- ACTIONS ---
+        async function setStatus(id, status) {
+            const item = inventory.find(i => i.id === id);
+            if(item && item.status !== status) {
+                item.status = status;
+                render();
+                await saveData();
+            }
         }
 
         async function addItem() {
-            const name = document.getElementById('newName').value;
-            const count = parseInt(document.getElementById('newCount').value);
+            const name = document.getElementById('newName').value.trim();
             if(!name) return;
-            inventory.push({ id: generateCode(), name, count });
-            closeModal(); renderItems(); await saveData();
-        }
-
-        async function updateCount(id, change) {
-            const item = inventory.find(i => i.id === id);
-            if(item) {
-                item.count = Math.max(0, item.count + change);
-                renderItems(); saveData();
-            }
-        }
-
-        async function deleteItem(id) {
-            if(confirm("Smazat?")) {
-                inventory = inventory.filter(i => i.id !== id);
-                renderItems(); await saveData();
-            }
-        }
-
-        function openModal() {
-            document.getElementById('addModal').style.display = 'flex';
+            const id = Math.floor(Math.random()*10000).toString().padStart(4,'0');
+            inventory.unshift({ id, name, status: 'green' });
             document.getElementById('newName').value = '';
-            document.getElementById('newCount').value = 1;
-            document.getElementById('newName').focus();
+            render();
+            await saveData();
         }
-        function closeModal() { document.getElementById('addModal').style.display = 'none'; }
+        
+        async function delItem(id) {
+            if(confirm("Smazat produkt?")) {
+                inventory = inventory.filter(i => i.id !== id);
+                render();
+                await saveData();
+            }
+        }
 
+        // --- PRINT KANBAN CARDS ---
+        function openPrintModal() {
+            const sel = document.getElementById('print-select');
+            sel.innerHTML = '';
+            inventory.forEach(i => {
+                const opt = document.createElement('option');
+                opt.value = i.id;
+                opt.innerText = i.name;
+                sel.appendChild(opt);
+            });
+            document.getElementById('print-setup').style.display = 'flex';
+        }
+
+        function preparePrint(type) {
+            const id = document.getElementById('print-select').value;
+            const item = inventory.find(i => i.id === id);
+            if(!item) return;
+
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = '';
+
+            const actionCode = `${item.id}-${type}`; 
+            
+            const title = type === 'red' ? "🛑 DOŠLO TO!" : "⚠️ DOCHÁZÍ!";
+            const desc = type === 'red' 
+                ? `Vložte před poslední kus.<br>Při odebrání naskenujte.<br><b>${item.name}</b>`
+                : `Vložte před posledních 3-5 ks.<br>Při odebrání naskenujte.<br><b>${item.name}</b>`;
+
+            const card = document.createElement('div');
+            card.className = 'kanban-card';
+            card.innerHTML = `
+                <div class="kc-title">${title}</div>
+                <div class="kc-desc">${desc}</div>
+                <svg id="bc-print"></svg>
+                <div style="margin-top:5px; font-family:monospace;">${actionCode}</div>
+            `;
+            printArea.appendChild(card);
+            
+            JsBarcode("#bc-print", actionCode, { format: "CODE128", displayValue: false, height: 50 });
+
+            setTimeout(() => {
+                window.print();
+                document.getElementById('print-setup').style.display = 'none';
+                printArea.innerHTML = ''; 
+            }, 500);
+        }
+
+        // --- SCANNER LOGIC ---
         function startScanner() {
-            const container = document.getElementById('scanner-container');
-            container.style.display = 'block';
+            document.getElementById('scanner-modal').style.display = 'flex';
             html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, onScanSuccess)
-            .catch(err => { alert("Kamera nedostupná."); container.style.display = 'none'; });
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess);
         }
         function stopScanner() {
-            if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('scanner-container').style.display = 'none');
-            else document.getElementById('scanner-container').style.display = 'none';
+            document.getElementById('scanner-modal').style.display = 'none';
+            if(html5QrCode) html5QrCode.stop();
         }
+
         function onScanSuccess(decodedText) {
             stopScanner();
-            document.getElementById('searchInput').value = decodedText;
-            renderItems();
-            const item = inventory.find(i => i.id === decodedText);
-            if(!item && confirm(`Kód ${decodedText} není ve skladu. Přidat?`)) openModal();
+            
+            const parts = decodedText.split('-');
+            if(parts.length === 2) {
+                const id = parts[0];
+                const action = parts[1];
+                const item = inventory.find(i => i.id === id);
+                if(item) {
+                    setStatus(id, action);
+                    alert(`✅ Aktualizováno: ${item.name} -> ${action === 'red' ? 'KOUPIT' : 'DOCHÁZÍ'}`);
+                    return;
+                }
+            }
+            document.getElementById('search').value = decodedText;
+            render();
+            alert("Kód nenalezen nebo neplatný formát Kanban karty.");
         }
+
+        // --- EMAIL ---
+        function sendEmail() {
+            const btn = document.getElementById('btnEmail');
+            const toBuy = inventory.filter(i => i.status === 'red' || i.status === 'yellow');
+            
+            if(toBuy.length === 0) return alert("Vše OK, nic nechybí.");
+            
+            // Sestavení seznamu pro email
+            const list = toBuy.map(i => `- ${i.name} (${i.status==='red'?'NUTNÉ!':'dochází'})`).join('\n');
+            
+            btn.innerText = "Odesílám...";
+            btn.disabled = true;
+
+            // Odeslání přes EmailJS
+            emailjs.send(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, {
+                message: list
+            })
+            .then(() => {
+                alert("Seznam úspěšně odeslán na email! 📧");
+                btn.innerText = "📧 Odeslat";
+                btn.disabled = false;
+            }, (err) => {
+                alert("Chyba odesílání: " + JSON.stringify(err));
+                btn.innerText = "📧 Odeslat";
+                btn.disabled = false;
+            });
+        }
+
     </script>
 </body>
 </html>
