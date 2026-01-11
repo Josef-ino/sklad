@@ -11,73 +11,86 @@
     
     <style>
         :root {
-            --ok: #10B981;       /* Zelená - Mám dost */
-            --warn: #F59E0B;     /* Oranžová - Dochází */
-            --crit: #EF4444;     /* Červená - Kritické */
-            --bg: #F3F4F6;
-            --text: #1F2937;
+            --ok: #10B981; --warn: #F59E0B; --crit: #EF4444;
+            --bg: #F3F4F6; --text: #1F2937;
         }
-
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
 
         /* HEADER */
         header { background: white; padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         h1 { margin: 0; font-size: 1.2rem; color: #333; }
         
-        /* TOOLS */
+        /* SEARCH & TOOLS */
         .tools { display: flex; gap: 10px; }
         input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        .btn-icon { width: 44px; background: #3B82F6; color: white; border: none; border-radius: 8px; font-size: 1.2rem; cursor: pointer; }
+        .btn-icon { width: 44px; height: 44px; background: #3B82F6; color: white; border: none; border-radius: 8px; font-size: 1.5rem; cursor: pointer; display: flex; justify-content: center; align-items: center;}
 
         /* LIST */
         .grid { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 15px; max-width: 800px; margin: 0 auto; }
+        @media(min-width:600px) { .grid { grid-template-columns: 1fr 1fr; } }
         
         .card { 
-            background: white; border-radius: 12px; padding: 15px; 
-            border-left: 10px solid var(--ok); 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            background: white; padding: 15px; border-radius: 12px; 
+            border-left: 10px solid var(--ok); box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
             display: flex; justify-content: space-between; align-items: center;
         }
-
-        .card[data-status="ok"] { border-left-color: var(--ok); }
         .card[data-status="warn"] { border-left-color: var(--warn); background: #FFFBEB; }
         .card[data-status="crit"] { border-left-color: var(--crit); background: #FEF2F2; }
 
-        .item-info { flex: 1; }
         .item-name { font-weight: bold; font-size: 1.1rem; }
-        .item-status { font-size: 0.8rem; color: #666; margin-top: 4px; text-transform: uppercase; font-weight: bold; }
-
-        .btn-reset { 
-            padding: 8px 15px; background: #E5E7EB; border: none; border-radius: 20px; 
-            font-size: 0.8rem; font-weight: bold; color: #374151; cursor: pointer; 
-        }
+        .item-status { font-size: 0.8rem; color: #666; margin-top: 4px; font-weight: bold; text-transform: uppercase; }
 
         /* TLAČÍTKA */
-        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #3B82F6; color: white; border-radius: 50%; border: none; font-size: 2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; }
-        .btn-email { position: fixed; bottom: 20px; left: 20px; height: 60px; padding: 0 20px; background: #10B981; color: white; border-radius: 30px; border: none; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; gap: 5px;}
+        .btn-reset { padding: 8px 15px; background: #E5E7EB; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #3B82F6; color: white; border-radius: 50%; border: none; font-size: 2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index:90; }
+        .btn-email { position: fixed; bottom: 20px; left: 20px; height: 60px; padding: 0 20px; background: #10B981; color: white; border-radius: 30px; border: none; font-weight: bold; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index:90; }
 
-        /* SKENER */
+        /* SKENER UI */
         #scanner-ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 2000; display: none; }
         #reader { width: 100%; height: 80%; }
         .close-scan { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: white; border: none; border-radius: 30px; font-weight: bold; }
 
-        /* TISK */
+        /* --- OPRAVENÉ CSS PRO TISK --- */
+        #print-area { display: none; } /* Normálně skryté */
+
         @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; top: 0; left: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+            /* Skryje úplně všechno na stránce */
+            body > * { display: none !important; }
             
-            .print-card { 
-                border: 2px dashed black; padding: 10px; text-align: center; 
-                page-break-inside: avoid; height: 160px; display: flex; flex-direction: column; justify-content: center;
+            /* Zobrazí JEN tiskovou oblast */
+            #print-area { 
+                display: grid !important; 
+                grid-template-columns: 1fr 1fr; 
+                gap: 15px; 
+                position: absolute; 
+                top: 0; 
+                left: 0; 
+                width: 100%; 
+                background: white;
+                padding: 10px;
+                box-sizing: border-box;
             }
-            .print-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-            .print-instruction { font-size: 14px; font-weight: bold; background: black; color: white; padding: 2px; margin-bottom: 5px; }
-            .print-code { font-family: monospace; font-size: 14px; }
-            svg { width: 100%; height: 50px; }
+            
+            /* Styly pro kartičky při tisku */
+            .print-card { 
+                display: flex !important;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                border: 2px dashed black; 
+                padding: 10px; 
+                text-align: center; 
+                break-inside: avoid; /* Nerozdělovat na stránky */
+                height: 140px; 
+                page-break-inside: avoid;
+            }
+            
+            .print-title { font-size: 14pt; font-weight: bold; margin-bottom: 5px; color: black; }
+            .print-instruction { font-size: 10pt; font-weight: bold; background: black; color: white; padding: 2px 8px; margin-bottom: 5px; border-radius: 4px; }
+            .print-code { font-family: monospace; font-size: 10pt; margin-top: 5px; color: black; }
+            svg { width: 100%; max-height: 50px; display: block; }
         }
-        #print-area { display: none; }
     </style>
 </head>
 <body>
@@ -91,13 +104,14 @@
         </div>
     </div>
 
+    <!-- UI -->
     <header>
         <div class="header-top">
             <h1>📦 Sklad <span id="status" style="font-size:0.8rem">...</span></h1>
-            <button class="btn-icon" onclick="preparePrint()" title="Tisk kartiček">🖨️</button>
+            <button class="btn-icon" onclick="preparePrint()" title="Tisk">🖨️</button>
         </div>
         <div class="tools">
-            <input type="text" id="search" placeholder="Hledat..." oninput="render()">
+            <input type="text" id="search" placeholder="🔍 Hledat..." oninput="render()">
             <button class="btn-icon" onclick="startScanner()">📷</button>
         </div>
     </header>
@@ -107,23 +121,22 @@
     <button class="btn-email" onclick="sendEmailViaService()" id="btnSend">📧 Odeslat</button>
     <button class="fab" onclick="addItemPrompt()">+</button>
 
+    <!-- SKENER -->
     <div id="scanner-ui">
         <div id="reader"></div>
         <button class="close-scan" onclick="stopScanner()">Zavřít</button>
     </div>
 
+    <!-- TISK -->
     <div id="print-area"></div>
 
     <script>
-        // --- 1. KONFIGURACE (VŠE VYPLNĚNO) ---
+        // --- KONFIGURACE ---
         const USER = "dole";
         const PASS = "01";
-        
-        // Data (Pantry) - KOŠÍK SE JMENUJE "kanban"
         const PANTRY_ID = "7a5aa8af-6120-4aef-9372-9520d1fb3f2d";
         const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/kanban`;
 
-        // Vaše EmailJS údaje
         const EMAIL_SERVICE_ID = "service_wzg8ove";
         const EMAIL_TEMPLATE_ID = "template_71jc7wb";
         const EMAIL_PUBLIC_KEY = "o1EMgg8G3ffAloJPI";
@@ -132,11 +145,9 @@
         let scanner;
 
         // Init EmailJS
-        (function() {
-            emailjs.init(EMAIL_PUBLIC_KEY);
-        })();
+        (function() { try { emailjs.init(EMAIL_PUBLIC_KEY); } catch(e){} })();
 
-        // --- 2. DATA ---
+        // --- DATA ---
         async function loadData() {
             document.getElementById('status').innerText = "Načítám...";
             try {
@@ -159,10 +170,10 @@
                     body: JSON.stringify({ items: inventory })
                 });
                 document.getElementById('status').innerText = "✅";
-            } catch(e) { document.getElementById('status').innerText = "❌ Chyba"; }
+            } catch(e) {}
         }
 
-        // --- 3. RENDER ---
+        // --- RENDER ---
         function render() {
             const list = document.getElementById('list');
             const term = document.getElementById('search').value.toLowerCase();
@@ -183,7 +194,7 @@
                 if(item.status === 'crit') statusText = `⛔ KRITICKÉ (Zbylo ${item.critAt} ks - KOUPIT!)`;
 
                 div.innerHTML = `
-                    <div class="item-info">
+                    <div style="flex:1">
                         <div class="item-name">${item.name}</div>
                         <div class="item-status">${statusText}</div>
                     </div>
@@ -199,17 +210,13 @@
         function addItemPrompt() {
             const name = prompt("Název produktu:");
             if(!name) return;
-            // Výchozí hodnoty pro tisk štítků (3 ks a 0 ks)
             inventory.push({ id: generateCode(), name: name, status: 'ok', warnAt: 3, critAt: 0 });
             saveData(); render();
         }
 
         function resetItem(id) {
             const item = inventory.find(i => i.id === id);
-            if(item) {
-                item.status = 'ok';
-                saveData(); render();
-            }
+            if(item) { item.status = 'ok'; saveData(); render(); }
         }
 
         function deleteItem(id) {
@@ -219,26 +226,17 @@
             }
         }
 
-        // --- 4. LOGIKA SKENERU (ZPRACOVÁNÍ KÓDŮ) ---
+        // --- SKENER ---
         function processCode(code) {
             const parts = code.split('-');
-            
-            // Očekáváme formát ID-TYP (např. 123-W)
             if(parts.length !== 2) return alert("Neznámý kód: " + code);
-            
             const id = parts[0];
             const type = parts[1]; 
             const item = inventory.find(i => i.id === id);
-            
             if(!item) return alert("Produkt nenalezen!");
 
-            if(type === 'W') {
-                item.status = 'warn';
-                alert(`⚠️ ${item.name} přepnuto na DOCHÁZÍ!`);
-            } else if (type === 'C') {
-                item.status = 'crit';
-                alert(`⛔ ${item.name} přepnuto na KRITICKÉ!`);
-            }
+            if(type === 'W') { item.status = 'warn'; alert(`⚠️ ${item.name} dochází!`); } 
+            else if (type === 'C') { item.status = 'crit'; alert(`⛔ ${item.name} je KRITICKÉ!`); }
             saveData(); render();
         }
 
@@ -254,13 +252,18 @@
             if(scanner) scanner.stop();
         }
 
-        // --- 5. TISK DVOJITÝCH KARET ---
+        // --- TISK (OPRAVENO) ---
         function preparePrint() {
             const area = document.getElementById('print-area');
             area.innerHTML = '';
             
-            if(inventory.length === 0) return alert("Nemáte žádné produkty k tisku.");
+            // POJISTKA: Pokud není co tisknout
+            if(inventory.length === 0) {
+                alert("Seznam je prázdný! Nejdříve přidejte produkty tlačítkem +");
+                return;
+            }
 
+            // Generování kartiček do skrytého divu
             inventory.forEach(item => {
                 // Karta VAROVÁNÍ
                 area.innerHTML += `
@@ -268,7 +271,7 @@
                         <div class="print-title">${item.name}</div>
                         <div class="print-instruction">VLOŽIT MEZI POSLEDNÍCH ${item.warnAt} KS</div>
                         <svg class="barcode" data-code="${item.id}-W"></svg>
-                        <div class="print-code">Kód: ${item.id}-W (DOCHÁZÍ)</div>
+                        <div class="print-code">${item.id}-W (DOCHÁZÍ)</div>
                     </div>
                 `;
                 // Karta KRITICKÉ
@@ -277,19 +280,30 @@
                         <div class="print-title">${item.name}</div>
                         <div class="print-instruction">POSLEDNÍ KUS / PRÁZDNÉ</div>
                         <svg class="barcode" data-code="${item.id}-C"></svg>
-                        <div class="print-code">Kód: ${item.id}-C (KRITICKÉ)</div>
+                        <div class="print-code">${item.id}-C (KRITICKÉ)</div>
                     </div>
                 `;
             });
-            
+
+            // Vykreslení čárových kódů
             document.querySelectorAll('#print-area svg').forEach(svg => {
-                JsBarcode(svg, svg.dataset.code, { format: "CODE128", displayValue: false, height: 40 });
+                try {
+                    JsBarcode(svg, svg.dataset.code, { 
+                        format: "CODE128", 
+                        displayValue: false, 
+                        height: 40,
+                        margin: 0
+                    });
+                } catch(e) { console.error("Chyba barcodu", e); }
             });
-            
-            setTimeout(() => window.print(), 500);
+
+            // Důležité: Čekáme 1 vteřinu, aby se vše vykreslilo, než spustíme tisk
+            setTimeout(() => {
+                window.print();
+            }, 1000);
         }
 
-        // --- 6. ODESLÁNÍ EMAILEM ---
+        // --- EMAIL ---
         function sendEmailViaService() {
             const toBuy = inventory.filter(i => i.status !== 'ok');
             if(toBuy.length === 0) return alert("Vše je OK, nákup není potřeba.");
@@ -298,23 +312,11 @@
             btn.innerText = "Odesílám...";
             btn.disabled = true;
 
-            // Seznam pro email
-            let messageList = toBuy.map(i => {
-                return `- ${i.name} (${i.status === 'crit' ? 'NUTNÉ!!' : 'dochází'})`;
-            }).join('\n');
+            const list = toBuy.map(i => `- ${i.name} (${i.status === 'crit' ? 'NUTNÉ!!' : 'dochází'})`).join('\n');
 
-            emailjs.send(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, {
-                message: messageList,
-            })
-            .then(() => {
-                alert("✅ Seznam odeslán na email!");
-                btn.innerText = "📧 Odeslat";
-                btn.disabled = false;
-            }, (err) => {
-                alert("❌ Chyba odesílání: " + JSON.stringify(err));
-                btn.innerText = "📧 Odeslat";
-                btn.disabled = false;
-            });
+            emailjs.send(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, { message: list })
+            .then(() => { alert("✅ Odesláno!"); btn.innerText = "📧 Odeslat"; btn.disabled = false; }, 
+                  (err) => { alert("❌ Chyba: " + JSON.stringify(err)); btn.innerText = "📧 Odeslat"; btn.disabled = false; });
         }
     </script>
 </body>
