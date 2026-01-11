@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sklad Pro</title>
+    <!-- Knihovny -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Ikony -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --danger: #EF4444;
+            --bg: #F3F4F6;
+            --card: #ffffff;
+            --text: #1F2937;
+        }
+
+        * { box-sizing: border-box; touch-action: manipulation; } /* Lepší odezva na dotyk */
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--bg); 
+            color: var(--text);
+            padding-bottom: 80px; /* Místo pro spodní lištu */
+        }
+
+        /* --- PŘIHLAŠOVACÍ OBRAZOVKA --- */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .login-box {
+            background: white; padding: 30px; border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center;
+        }
+        .login-input {
+            width: 100%; padding: 15px; margin: 10px 0;
+            border: 2px solid #e5e7eb; border-radius: 10px; font-size: 16px; outline: none; transition: 0.3s;
+        }
+        .login-input:focus { border-color: var(--primary); }
+        .btn-login {
+            width: 100%; padding: 15px; background: var(--primary); color: white;
+            border: none; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 10px;
+        }
+
+        /* --- HLAVNÍ APLIKACE --- */
+        #app-container { display: none; max-width: 800px; margin: 0 auto; padding: 15px; }
+
+        /* Header */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: #111827; }
+        .status-badge { font-size: 0.8rem; padding: 4px 8px; border-radius: 12px; background: #e5e7eb; }
+
+        /* Ovládací tlačítka nahoře */
+        .top-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .action-btn {
+            padding: 12px; border: none; border-radius: 12px; font-weight: 600; color: white;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn-scan { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+        .btn-print { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+        /* Vyhledávání */
+        .search-box { position: relative; margin-bottom: 20px; }
+        .search-box input {
+            width: 100%; padding: 15px 15px 15px 45px; border-radius: 12px; border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); font-size: 1rem;
+        }
+        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+
+        /* Seznam položek */
+        .item-list { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        @media(min-width: 600px) { .item-list { grid-template-columns: 1fr 1fr; } }
+
+        .item {
+            background: white; border-radius: 16px; padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center;
+            position: relative; overflow: hidden;
+        }
+        
+        .item.empty { border: 2px solid var(--danger); background: #FEF2F2; }
+        .empty-badge {
+            background: var(--danger); color: white; font-size: 0.7rem; padding: 4px 12px;
+            border-radius: 20px; font-weight: bold; margin-bottom: 8px;
+        }
+
+        .item-name { font-size: 1.2rem; font-weight: 700; color: #1f2937; margin-bottom: 5px; text-align: center; }
+        
+        /* Čárový kód a číslo */
+        .barcode-wrap { margin: 10px 0; text-align: center; }
+        .big-code { font-family: monospace; font-size: 1.5rem; font-weight: bold; color: #374151; letter-spacing: 2px; }
+
+        /* Ovládání počtu - velké dotykové plochy */
+        .controls { 
+            display: flex; align-items: center; justify-content: space-between; 
+            width: 100%; background: #F9FAFB; padding: 8px; border-radius: 12px; margin-top: 10px;
+        }
+        .btn-circle {
+            width: 44px; height: 44px; border-radius: 50%; border: none; color: white;
+            font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn-minus { background: #EF4444; }
+        .btn-plus { background: #10B981; }
+        .count-display { font-size: 1.5rem; font-weight: bold; width: 50px; text-align: center; }
+
+        .btn-trash {
+            position: absolute; top: 10px; right: 10px; color: #9CA3AF; background: none; border: none; font-size: 1.2rem;
+        }
+
+        /* --- SPODNÍ PŘIDÁVACÍ LIŠTA --- */
+        .add-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: white;
+            padding: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            display: flex; gap: 10px; z-index: 100;
+        }
+        .add-input { flex: 2; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 1rem; }
+        .add-count { flex: 1; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 1rem; text-align: center; }
+        .btn-add-submit { 
+            background: var(--success); color: white; border: none; border-radius: 10px; width: 50px; 
+            font-size: 1.2rem; cursor: pointer;
+        }
+
+        /* --- SKENER --- */
+        #scanner-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 2000; flex-direction: column;
+        }
+        #reader { width: 100%; height: 70%; object-fit: cover; }
+        .close-scanner {
+            background: white; color: black; padding: 20px; text-align: center; font-weight: bold;
+        }
+
+        /* --- TISK (OPTIMALIZACE) --- */
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            #login-screen, .add-bar, .top-actions, .search-box, header, .controls, .btn-trash, .empty-badge { display: none !important; }
+            
+            #app-container { display: block; width: 100%; padding: 0; margin: 0; }
+            
+            .item-list {
+                display: grid;
+                /* Optimalizace pro A4: cca 4-5 sloupců */
+                grid-template-columns: repeat(auto-fill, minmax(45mm, 1fr));
+                gap: 5mm;
+            }
+
+            .item {
+                border: 1px dashed #000;
+                box-shadow: none;
+                border-radius: 4px;
+                padding: 5px;
+                height: 35mm; /* Pevná výška štítku */
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                break-inside: avoid; /* Nerozdělovat na konci stránky */
+            }
+
+            .item-name { 
+                font-size: 10pt; 
+                margin-bottom: 2px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+                width: 100%;
+            }
+            
+            .barcode-wrap svg { height: 40px !important; width: 90% !important; }
+            .big-code { font-size: 14pt; margin-top: 0; letter-spacing: 1px; }
+            
+            /* Skrýt vyprodaný status při tisku */
+            .item.empty { background: white !important; border-color: black; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. PŘIHLAŠOVACÍ OBRAZOVKA -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>🔐 Sklad Pro</h2>
+            <p style="color: #666; margin-bottom: 20px;">Pro vstup se prosím přihlašte</p>
+            <input type="text" id="login-user" class="login-input" placeholder="Uživatelské jméno">
+            <input type="password" id="login-pass" class="login-input" placeholder="Heslo">
+            <button class="btn-login" onclick="login()">Vstoupit</button>
+            <p id="login-error" style="color: red; margin-top: 10px; display: none;">Špatné jméno nebo heslo!</p>
+        </div>
+    </div>
+
+    <!-- 2. SKENER MODAL -->
+    <div id="scanner-modal">
+        <div class="close-scanner" onclick="stopScanner()">ZAVŘÍT SKENER ✖</div>
+        <div id="reader"></div>
+    </div>
+
+    <!-- 3. HLAVNÍ APLIKACE -->
+    <div id="app-container">
+        <header>
+            <h1>📦 Domácí Sklad</h1>
+            <span id="syncStatus" class="status-badge">Offline</span>
+        </header>
+
+        <div class="top-actions">
+            <button class="action-btn btn-scan" onclick="startScanner()">
+                <i class="fas fa-camera"></i> Skenovat
+            </button>
+            <button class="action-btn btn-print" onclick="window.print()">
+                <i class="fas fa-print"></i> Tisk štítků
+            </button>
+        </div>
+
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Hledat produkt nebo kód..." oninput="renderItems()">
+        </div>
+
+        <div id="inventoryList" class="item-list"></div>
+    </div>
+
+    <!-- 4. SPODNÍ LIŠTA PŘIDÁNÍ -->
+    <div class="add-bar" id="addBar" style="display: none;">
+        <input type="text" id="newName" class="add-input" placeholder="Nový produkt...">
+        <input type="number" id="newCount" class="add-count" value="1">
+        <button class="btn-add-submit" onclick="addItem()"><i class="fas fa-plus"></i></button>
+    </div>
+
+    <script>
+        // --- KONFIGURACE ---
+        const USERNAME = "dole";
+        const PASSWORD = "01";
+        const PANTRY_ID = "7a5aa8af-6120-4aef-9372-9520d1fb3f2d";
+        const BASKET_NAME = "sklad";
+        const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
+
+        let inventory = [];
+        let html5QrcodeScanner = null;
+
+        // --- PŘIHLÁŠENÍ ---
+        function login() {
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            
+            if (u.toLowerCase() === USERNAME && p === PASSWORD) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                document.getElementById('addBar').style.display = 'flex';
+                loadData(); // Načíst data až po přihlášení
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        // --- DATABÁZE (PANTRY) ---
+        async function loadData() {
+            updateStatus("Synchronizuji...", "#FEF3C7");
+            try {
+                const response = await fetch(API_URL + "?t=" + Date.now());
+                if (!response.ok) inventory = [];
+                else {
+                    const data = await response.json();
+                    inventory = data.items || [];
+                }
+                renderItems();
+                updateStatus("Online ✅", "#D1FAE5");
+            } catch (error) {
+                console.error(error);
+                updateStatus("Offline ❌", "#FEE2E2");
+            }
+        }
+
+        async function saveData() {
+            updateStatus("Ukládám...", "#FEF3C7");
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: inventory })
+                });
+                updateStatus("Uloženo ✅", "#D1FAE5");
+            } catch (error) {
+                updateStatus("Chyba ukládání!", "#FEE2E2");
+            }
+        }
+
+        function updateStatus(text, color) {
+            const el = document.getElementById('syncStatus');
+            el.innerText = text;
+            el.style.backgroundColor = color;
+        }
+
+        // --- LOGIKA ---
+        function generateCode() {
+            let code;
+            let attempts = 0;
+            do {
+                let num = Math.floor(Math.random() * 1000);
+                code = num.toString().padStart(3, '0');
+                attempts++;
+            } while (inventory.some(i => i.id === code) && attempts < 1000);
+            return code;
+        }
+
+        async function addItem() {
+            const nameIn = document.getElementById('newName');
+            const countIn = document.getElementById('newCount');
+            const name = nameIn.value.trim();
+            const count = parseInt(countIn.value) || 1;
+
+            if (!name) return alert("Zadejte název produktu!");
+
+            inventory.unshift({ id: generateCode(), name: name, count: count });
+            
+            nameIn.value = '';
+            countIn.value = '1';
+            renderItems();
+            await saveData();
+        }
+
+        async function updateCount(id, change) {
+            const item = inventory.find(i => i.id === id);
+            if (item) {
+                item.count += change;
+                if (item.count < 0) item.count = 0;
+                renderItems();
+                await saveData(); // Pro rychlejší odezvu lze debounce
+            }
+        }
+
+        async function deleteItem(id) {
+            if(confirm("Opravdu smazat?")) {
+                inventory = inventory.filter(i => i.id !== id);
+                renderItems();
+                await saveData();
+            }
+        }
+
+        // --- VYKRESLENÍ ---
+        function renderItems() {
+            const list = document.getElementById('inventoryList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            list.innerHTML = '';
+
+            const filtered = inventory.filter(item => 
+                item.name.toLowerCase().includes(search) || item.id.includes(search)
+            );
+
+            // Třídění: Vyprodané první
+            filtered.sort((a,b) => (a.count === 0) ? -1 : 1);
+
+            filtered.forEach(item => {
+                const isEmpty = item.count === 0;
+                const div = document.createElement('div');
+                div.className = `item ${isEmpty ? 'empty' : ''}`;
+                
+                div.innerHTML = `
+                    <button class="btn-trash" onclick="deleteItem('${item.id}')"><i class="fas fa-trash"></i></button>
+                    ${isEmpty ? '<div class="empty-badge">DOKOUPIT!</div>' : ''}
+                    <div class="item-name">${item.name}</div>
+                    
+                    <div class="barcode-wrap">
+                        <svg class="barcode" 
+                             jsbarcode-format="CODE128" 
+                             jsbarcode-value="${item.id}"
+                             jsbarcode-displayValue="false" 
+                             jsbarcode-height="50"
+                             jsbarcode-width="2">
+                        </svg>
+                        <div class="big-code">${item.id}</div>
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn-circle btn-minus" onclick="updateCount('${item.id}', -1)">-</button>
+                        <span class="count-display">${item.count}</span>
+                        <button class="btn-circle btn-plus" onclick="updateCount('${item.id}', 1)">+</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            JsBarcode(".barcode").init();
+        }
+
+        // --- SKENER ---
+        function startScanner() {
+            document.getElementById('scanner-modal').style.display = 'flex';
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
+            
+            html5QrcodeScanner.start({ facingMode: "environment" }, config, (decodedText) => {
+                stopScanner();
+                document.getElementById('searchInput').value = decodedText;
+                renderItems();
+            }).catch(() => {
+                alert("Kamera není dostupná.");
+                stopScanner();
+            });
+        }
+
+        function stopScanner() {
+            document.getElementById('scanner-modal').style.display = 'none';
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.stop().catch(console.error);
+                html5QrcodeScanner.clear();
+            }
+        }
+    </script>
+</body>
+</html>
