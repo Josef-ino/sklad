@@ -8,83 +8,35 @@
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
-        :root {
-            --primary: #2563eb;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --bg: #f3f4f6;
-            --card-bg: #ffffff;
-            --text: #1f2937;
-        }
+        :root { --primary: #2563eb; --danger: #dc2626; --success: #16a34a; --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+        
+        /* LOGIN */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+        .login-box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 320px; text-align: center; }
+        .login-box input { width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem; }
+        .btn-login { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding-bottom: 80px;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* --- PŘIHLAŠOVACÍ OBRAZOVKA --- */
-        #login-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 9999;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            padding: 20px; box-sizing: border-box;
-        }
-        .login-box {
-            background: white; padding: 30px; border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 320px;
-            text-align: center;
-        }
-        .login-box h2 { margin-top: 0; color: var(--primary); }
-        .login-box input { 
-            width: 100%; padding: 15px; margin-bottom: 15px; 
-            border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1.1rem;
-        }
-        .btn-login {
-            width: 100%; padding: 15px; background: var(--primary); 
-            color: white; border: none; border-radius: 10px; 
-            font-weight: bold; font-size: 1.1rem; cursor: pointer;
-        }
-
-        /* --- HLAVNÍ APLIKACE (Skrytá dokud se nepřihlásí) --- */
+        /* APP */
         #app-content { display: none; }
-
-        header {
-            background: var(--card-bg); padding: 15px; position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 10px;
-        }
+        header { background: var(--card-bg); padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; gap: 10px; }
         .header-top { display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; font-size: 1.2rem; color: var(--primary); }
         .search-bar { display: flex; gap: 10px; }
         input[type="text"] { flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; font-size: 1rem; outline: none; }
         .btn-icon { background: var(--primary); color: white; border: none; border-radius: 12px; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; cursor: pointer; }
 
-        /* SKENER */
+        /* SKENER & GRID */
         #scanner-container { width: 100%; max-width: 500px; margin: 0 auto; display: none; background: black; position: relative; }
         #reader { width: 100%; }
         .close-scanner { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.8); border: none; padding: 10px; border-radius: 50%; z-index: 10; font-weight: bold; }
-
-        /* GRID */
         .grid { display: grid; grid-template-columns: 1fr; gap: 15px; padding: 15px; max-width: 800px; margin: 0 auto; }
         @media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
-
-        .card {
-            background: var(--card-bg); border-radius: 16px; padding: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center;
-            position: relative; border: 2px solid transparent; transition: transform 0.2s;
-        }
+        
+        .card { background: var(--card-bg); border-radius: 16px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; position: relative; border: 2px solid transparent; transition: transform 0.2s; }
         .card.empty { border-color: var(--danger); background-color: #fef2f2; }
-        .empty-badge {
-            position: absolute; top: -10px; background: var(--danger); color: white;
-            padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;
-            display: none; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
-        }
+        .empty-badge { position: absolute; top: -10px; background: var(--danger); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: none; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3); }
         .card.empty .empty-badge { display: block; }
-
         .item-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 5px; text-align: center; }
         .item-code { font-family: monospace; color: #6b7280; font-size: 0.9rem; margin-bottom: 10px; }
         .controls { display: flex; align-items: center; gap: 15px; width: 100%; justify-content: center; margin-top: 10px; }
@@ -95,22 +47,9 @@
         .barcode-svg { width: 100%; max-width: 200px; height: 50px; }
         .btn-del { background: none; border: none; color: #9ca3af; font-size: 0.8rem; margin-top: 10px; text-decoration: underline; cursor: pointer; }
 
-        .fab {
-            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
-            background: var(--success); color: white; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; font-size: 2rem;
-            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); border: none; z-index: 90; cursor: pointer;
-        }
-
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 200; display: none;
-            justify-content: center; align-items: flex-end;
-        }
-        .modal {
-            background: white; width: 100%; max-width: 600px;
-            padding: 25px; border-radius: 20px 20px 0 0; animation: slideUp 0.3s ease-out;
-        }
+        .fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--success); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); border: none; z-index: 90; cursor: pointer; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: flex-end; }
+        .modal { background: white; width: 100%; max-width: 600px; padding: 25px; border-radius: 20px 20px 0 0; animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .modal input { width: 100%; margin-bottom: 15px; padding: 10px; font-size: 1.1rem; border: 1px solid #ddd; border-radius: 8px;}
         .modal-btns { display: flex; gap: 10px; }
@@ -123,12 +62,7 @@
             .grid, .grid * { visibility: visible; }
             body { background: white; padding: 0; margin: 0; }
             .grid { display: block; padding: 0; margin: 0; width: 100%; }
-            .card {
-                float: left; width: 48mm; height: 28mm; margin: 2mm; padding: 1mm;
-                border: 1px dashed #000; border-radius: 0; box-shadow: none;
-                background: white !important; page-break-inside: avoid;
-                display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;
-            }
+            .card { float: left; width: 48mm; height: 28mm; margin: 2mm; padding: 1mm; border: 1px dashed #000; border-radius: 0; box-shadow: none; background: white !important; page-break-inside: avoid; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
             .controls, .btn-del, .empty-badge, header, .fab, #scanner-container, #login-overlay { display: none !important; }
             .item-name { font-size: 10pt; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
             .barcode-svg { height: 12mm; width: 90%; }
@@ -137,8 +71,6 @@
     </style>
 </head>
 <body>
-
-    <!-- PŘIHLAŠOVACÍ OKNO -->
     <div id="login-overlay">
         <div class="login-box">
             <h2>🔐 Sklad Login</h2>
@@ -149,14 +81,12 @@
         </div>
     </div>
 
-    <!-- OBSAH APLIKACE -->
     <div id="app-content">
         <header>
             <div class="header-top">
                 <h1>📦 Sklad <span id="syncStatus" style="font-size:0.8rem; color:#666; margin-left:10px;">...</span></h1>
                 <button class="btn-icon" onclick="window.print()" title="Tisk">🖨️</button>
             </div>
-            
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="Hledat..." oninput="renderItems()">
                 <button class="btn-icon" onclick="startScanner()" title="Skenovat">📷</button>
@@ -169,7 +99,6 @@
         </div>
 
         <div id="inventoryList" class="grid"></div>
-
         <button class="fab" onclick="openModal()">+</button>
 
         <div class="modal-overlay" id="addModal">
@@ -188,31 +117,9 @@
     </div>
 
     <script>
-        // --- PŘIHLAŠOVÁNÍ ---
+        // --- 1. KONFIGURACE A PROMĚNNÉ (MUSÍ BÝT PRVNÍ!) ---
         const USER = "dole";
         const PASS = "01";
-
-        function checkLogin() {
-            const u = document.getElementById('loginUser').value;
-            const p = document.getElementById('loginPass').value;
-            if(u === USER && p === PASS) {
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('app-content').style.display = 'block';
-                localStorage.setItem('sklad_logged_in', 'true'); // Zapamatovat přihlášení
-                loadData(); // Načíst data až po přihlášení
-            } else {
-                document.getElementById('loginError').style.display = 'block';
-            }
-        }
-
-        // Kontrola, zda už byl uživatel přihlášen dříve
-        if(localStorage.getItem('sklad_logged_in') === 'true') {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('app-content').style.display = 'block';
-            loadData();
-        }
-
-        // --- SKLADOVÁ LOGIKA ---
         const PANTRY_ID = "7a5aa8af-6120-4aef-9372-9520d1fb3f2d";
         const BASKET_NAME = "sklad";
         const API_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
@@ -220,6 +127,29 @@
         let inventory = [];
         let html5QrCode;
 
+        // --- 2. PŘIHLAŠOVÁNÍ ---
+        function checkLogin() {
+            const u = document.getElementById('loginUser').value;
+            const p = document.getElementById('loginPass').value;
+            if(u === USER && p === PASS) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                localStorage.setItem('sklad_logged_in', 'true');
+                loadData();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        // Automatické přihlášení, pokud už je uloženo
+        if(localStorage.getItem('sklad_logged_in') === 'true') {
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('app-content').style.display = 'block';
+            // Tady to teď už nespadne, protože API_URL je definované nahoře
+            loadData();
+        }
+
+        // --- 3. SKLADOVÁ LOGIKA ---
         async function loadData() {
             updateStatus("Načítám...");
             try {
